@@ -1,0 +1,28 @@
+{
+  "id": "./",
+  "name": "FA01 Hedge Hesaplayıcı",
+  "short_name": "FA01 Hedge",
+  "description": "FA01 Betting Exchange için site ve borsa lay oranlarını kullanan hedge/kayıp bonus hesaplayıcı.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "lang": "tr",
+  "dir": "ltr",
+  "categories": ["utilities", "finance"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
