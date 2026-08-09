@@ -63,13 +63,6 @@ h1{
   line-height:1.12;
 }
 h1 span{color:var(--green)}
-.subtitle{
-  text-align:center;
-  color:var(--muted);
-  font-size:14px;
-  margin:0 0 6px;
-  line-height:1.5;
-}
 .panel{
   border:1px solid #343434;
   border-radius:18px;
@@ -91,14 +84,6 @@ label{
   font-weight:900;
   font-size:15px;
 }
-label .tag{
-  color:var(--muted);
-  font-weight:700;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:.04em;
-  margin-left:6px;
-}
 .input-wrap{
   display:flex;
   align-items:center;
@@ -118,6 +103,12 @@ label .tag{
   font-weight:950;
   background:rgba(0,0,0,.18);
   border-right:1px solid #303030;
+  padding:0 10px;
+  white-space:nowrap;
+}
+.prefix.small{
+  font-size:15px;
+  letter-spacing:.01em;
 }
 input{
   width:100%;
@@ -148,22 +139,6 @@ button{
   cursor:pointer;
   font-family:Arial,Helvetica,sans-serif;
 }
-.threshold{
-  margin-top:14px;
-  padding:12px 14px;
-  border:1px solid #343434;
-  border-radius:12px;
-  background:rgba(255,255,255,.02);
-  font-size:13px;
-  color:var(--muted);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-.threshold b{font-size:14px}
-.threshold.ok b{color:var(--green)}
-.threshold.warn b{color:var(--red)}
 .error{
   margin-top:14px;
   padding:12px 14px;
@@ -306,13 +281,6 @@ button{
 .verdict.bad{background:var(--red-bg);color:var(--red)}
 .verdict.bad .dot{background:var(--red)}
 .verdict .vsub{color:var(--muted);font-weight:500}
-.footer{
-  margin-top:14px;
-  text-align:center;
-  color:#888;
-  font-size:13px;
-}
-.footer b{color:var(--blue)}
 @media(max-width:420px){
   body{padding:10px}
   body{padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
@@ -335,30 +303,24 @@ button{
 <main class="card">
   <img src="fa01-logo.jpg" alt="FA01 Betting Exchange" class="logo" fetchpriority="high">
   <h1><span>HEDGE</span><br>HESAPLAYICI</h1>
-  <div class="subtitle">Site oranı, borsa lay oranı ve bonus yüzdesini gir — gerekli borsa lay tutarını ve garanti kârı gör.</div>
 
   <section class="panel">
     <label for="bahis">Site Bahis Miktarı (€)</label>
-    <div class="input-wrap"><div class="prefix">€</div><input id="bahis" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Örn: 544"></div>
+    <div class="input-wrap"><div class="prefix">€</div><input id="bahis" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Örn: 544"></div>
 
     <div class="row2">
       <div>
-        <label for="siteOran">Site Oranı <span class="tag">back</span></label>
-        <div class="input-wrap"><div class="prefix">@</div><input id="siteOran" type="number" inputmode="decimal" step="0.01" min="1.01" placeholder="1.63"></div>
+        <label for="siteOran">Site back Oranı</label>
+        <div class="input-wrap"><div class="prefix small">@back</div><input id="siteOran" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="1.63"></div>
       </div>
       <div>
-        <label for="borsaOran">Borsa Lay Oranı <span class="tag">lay</span></label>
-        <div class="input-wrap"><div class="prefix">@</div><input id="borsaOran" type="number" inputmode="decimal" step="0.01" min="1.01" placeholder="1.73"></div>
+        <label for="borsaOran">Borsa Lay Oranı</label>
+        <div class="input-wrap"><div class="prefix small">@lay</div><input id="borsaOran" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="1.73"></div>
       </div>
     </div>
 
     <label for="oran">Bonus Oranı (%)</label>
-    <div class="input-wrap"><div class="prefix">%</div><input id="oran" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Örn: 25"></div>
-
-    <div id="thresholdBox" class="threshold" hidden>
-      <span>Eşik borsa lay oranı (altı kârlı)</span>
-      <b id="thresholdVal">—</b>
-    </div>
+    <div class="input-wrap"><div class="prefix">%</div><input id="oran" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="Örn: 25"></div>
 
     <button type="button" id="hesaplaBtn">HESAPLA</button>
 
@@ -406,8 +368,6 @@ button{
       </div>
     </div>
   </section>
-
-  <div class="footer"><b>FA01</b> BETTING EXCHANGE</div>
 </main>
 <script>
 (function () {
@@ -433,6 +393,58 @@ button{
     return (isNaN(n) || !isFinite(n)) ? null : n;
   }
 
+  // Oran alanları için: kullanıcı nokta/virgül koymadan "165" gibi yazarsa,
+  // bunu "1.65" olarak yorumlar (ilk hane tam kısım, kalanı ondalık).
+  // Zaten nokta veya virgülle yazılmışsa dokunmadan normal ayrıştırma kullanılır.
+  function normalizeOddsRaw(raw) {
+    raw = String(raw).trim();
+    if (raw === '') return raw;
+    if (raw.indexOf('.') > -1 || raw.indexOf(',') > -1) return raw;
+    if (raw.length > 1) {
+      return raw.charAt(0) + '.' + raw.slice(1);
+    }
+    return raw;
+  }
+
+  function parseOdds(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    var raw = normalizeOddsRaw(el.value);
+    if (raw === '') return null;
+    var n = parseFloat(raw);
+    return (isNaN(n) || !isFinite(n)) ? null : n;
+  }
+
+  function reformatOddsField(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var raw = String(el.value).trim();
+    if (raw === '' || raw.indexOf('.') > -1 || raw.indexOf(',') > -1) return;
+    if (raw.length > 1) {
+      el.value = raw.charAt(0) + '.' + raw.slice(1);
+    }
+  }
+
+  // Sayısal alanlarda yazarken: virgülü anında noktaya çevirir, sayı ve
+  // tek nokta dışındaki karakterleri temizler. İmleç konumunu korur.
+  function cleanDecimalInput(el) {
+    var pos = el.selectionStart;
+    var before = el.value;
+    var cleaned = before.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    var firstDot = cleaned.indexOf('.');
+    if (firstDot > -1) {
+      cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+    }
+    if (cleaned !== before) {
+      var diff = before.length - cleaned.length;
+      el.value = cleaned;
+      if (pos !== null) {
+        var newPos = Math.max(0, pos - diff);
+        el.setSelectionRange(newPos, newPos);
+      }
+    }
+  }
+
   function showError(show) {
     var hataEl = document.getElementById('hata');
     if (hataEl) hataEl.hidden = !show;
@@ -451,8 +463,8 @@ button{
   function hesapla() {
     try {
       var B = parseNumber('bahis');
-      var Ob = parseNumber('siteOran');
-      var Ol = parseNumber('borsaOran');
+      var Ob = parseOdds('siteOran');
+      var Ol = parseOdds('borsaOran');
       var oranPct = parseNumber('oran');
 
       if (B === null || Ob === null || Ol === null || oranPct === null ||
@@ -460,10 +472,13 @@ button{
         showError(true);
         setButtonLabel('HESAPLA');
         document.getElementById('sonucBox').classList.remove('active');
-        document.getElementById('thresholdBox').hidden = true;
         return;
       }
       showError(false);
+
+      // Girilen oranları, yorumlanan (noktalı) haliyle alanlarda göster.
+      reformatOddsField('siteOran');
+      reformatOddsField('borsaOran');
 
       var bonus = oranPct / 100;
 
@@ -481,9 +496,6 @@ button{
       var borsaKazanc = L;
       var net2 = siteKayip + borsaKazanc;
 
-      // Threshold: Ol < (Ob - bonus%) / (1 - bonus%)
-      var esik = (Ob - bonus) / (1 - bonus);
-
       var sonucEl = document.getElementById('sonuc');
       if (sonucEl) sonucEl.textContent = L.toFixed(2) + ' €';
 
@@ -498,12 +510,6 @@ button{
       var s2net = document.getElementById('s2net');
       s2net.textContent = fmtSigned(net2);
       s2net.className = 'sval ' + (net2 >= 0 ? 'pos' : 'neg');
-
-      var thresholdBox = document.getElementById('thresholdBox');
-      thresholdBox.hidden = false;
-      thresholdBox.classList.remove('ok', 'warn');
-      thresholdBox.classList.add(Ol < esik ? 'ok' : 'warn');
-      document.getElementById('thresholdVal').textContent = '@' + esik.toFixed(3);
 
       var v = document.getElementById('verdict');
       var bothPositive = net1 >= 0 && net2 >= 0;
@@ -599,7 +605,19 @@ button{
       var el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', handleEnterKey);
-      el.addEventListener('input', function () { setButtonLabel('HESAPLA'); });
+      el.addEventListener('input', function () {
+        cleanDecimalInput(el);
+        setButtonLabel('HESAPLA');
+      });
+    });
+
+    // Sadece oran alanlarında: alandan çıkınca (blur), nokta girilmemişse
+    // otomatik noktalı hale getirir — "165" yazılınca "1.65" olur.
+    var oddsIds = ['siteOran', 'borsaOran'];
+    oddsIds.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', function () { reformatOddsField(id); });
     });
   }
 
